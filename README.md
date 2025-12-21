@@ -6,7 +6,6 @@ A Tauri plugin that provides a custom URI-based command routing system for Tauri
 
 - Fix `Result` commands serialized to `{ "Ok": T }` or `{ "Err": E}`
 - Middleware/Layers
-- Async commands
 
 ## Installation
 

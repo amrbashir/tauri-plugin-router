@@ -7,7 +7,7 @@ use crate::{CommandContext, FromRequestParts};
 pub struct WebviewWindow<R: Runtime>(tauri::WebviewWindow<R>);
 
 impl<R: Runtime> FromRequestParts<R> for WebviewWindow<R> {
-    fn from_request_parts(
+    async fn from_request_parts(
         _parts: &mut tauri::http::request::Parts,
         _body: &[u8],
         ctx: &mut CommandContext<R>,

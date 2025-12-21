@@ -46,13 +46,13 @@ impl<R: Runtime> Router<R> {
         H: CommandHandler<R, T>,
     {
         let erased: ErasedCommandHandler<R> =
-            Box::new(move |ctx, req| handler.clone().call(req, ctx));
+            std::sync::Arc::new(move |ctx, req| Box::pin(handler.clone().call(req, ctx)));
         self.commands.insert(cmd.to_string(), erased);
         self
     }
 
     /// Handles an incoming request by dispatching it to the appropriate command handler.
-    pub(crate) fn handle_request(
+    pub(crate) async fn handle_request(
         &self,
         app_handle: &tauri::AppHandle<R>,
         webview_label: &str,
@@ -70,7 +70,7 @@ impl<R: Runtime> Router<R> {
 
         // Find and execute the command handler
         match self.commands.get(&command_name) {
-            Some(handler) => handler(ctx, request),
+            Some(handler) => handler(ctx, request).await,
             None => {
                 let error = crate::Error::CommandNotFound(command_name);
                 crate::response::error(error)
@@ -89,14 +89,16 @@ mod tests {
 
     macro_rules! call_raw {
         ($router:expr, $app:expr, $command:expr, $body:expr) => {{
-            $router.handle_request(
-                $app.handle(),
-                "test_webview",
-                tauri::http::Request::builder()
-                    .uri(format!("router://localhost/{}", $command))
-                    .body($body)
-                    .unwrap(),
-            )
+            $router
+                .handle_request(
+                    $app.handle(),
+                    "test_webview",
+                    tauri::http::Request::builder()
+                        .uri(format!("router://localhost/{}", $command))
+                        .body($body)
+                        .unwrap(),
+                )
+                .await
         }};
     }
 
@@ -187,8 +189,30 @@ mod tests {
         )
     }
 
-    #[test]
-    fn it_works() {
+    // Async handler examples for testing
+    async fn async_greet(name: String) -> String {
+        format!("Hello async, {}!", name)
+    }
+
+    async fn async_add(a: u32, b: u32) -> u32 {
+        // Simulate some async work (without external dependencies)
+        a + b
+    }
+
+    async fn async_with_result(value: i32) -> std::result::Result<i32, String> {
+        if value < 0 {
+            Err("Negative value not allowed".to_string())
+        } else {
+            Ok(value * 2)
+        }
+    }
+
+    async fn async_with_app<R: Runtime>(_app: AppHandle<R>, name: String) -> String {
+        format!("Async with App, {}!", name)
+    }
+
+    #[tokio::test]
+    async fn it_works() {
         let app = tauri::test::mock_app();
 
         let router = Router::new()
@@ -200,9 +224,13 @@ mod tests {
             .command("with_app", with_app)
             .command("raw_to_json", raw_to_json)
             .command("json_to_raw", json_to_raw)
-            .command("request_response", request_response);
+            .command("request_response", request_response)
+            .command("async_greet", async_greet)
+            .command("async_add", async_add)
+            .command("async_with_result", async_with_result)
+            .command("async_with_app", async_with_app);
 
-        // test output from commands
+        // test sync handlers
         let response = call_json!(router, app, "greet", &["Tauri"]);
         assert_eq!(body_as_string!(response), "\"Hello, Tauri!\"");
 
@@ -234,5 +262,24 @@ mod tests {
 
         let response = call_raw!(router, app, "request_response", b"echo this".to_vec());
         assert_eq!(response.into_body(), b"echo this".to_vec());
+
+        // test async handlers
+        let response = call_json!(router, app, "async_greet", &["World"]);
+        assert_eq!(body_as_string!(response), "\"Hello async, World!\"");
+
+        let response = call_json!(router, app, "async_add", &[7, 3]);
+        assert_eq!(body_as_string!(response), "10");
+
+        let response = call_json!(router, app, "async_with_result", &[5]);
+        assert_eq!(body_as_string!(response), "{\"Ok\":10}");
+
+        let response = call_json!(router, app, "async_with_result", &[-5]);
+        assert_eq!(
+            body_as_string!(response),
+            "{\"Err\":\"Negative value not allowed\"}"
+        );
+
+        let response = call_json!(router, app, "async_with_app", &["Async"]);
+        assert_eq!(body_as_string!(response), "\"Async with App, Async!\"");
     }
 }

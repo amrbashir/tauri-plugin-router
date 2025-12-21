@@ -91,8 +91,29 @@ button {
   outline: none;
 }
 
-#greet-input {
+#greet-input,
+#async-greet-input {
   margin-right: 5px;
+}
+
+.loading::after {
+  content: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="45" stroke="currentColor" stroke-width="10" fill="none" stroke-linecap="round"/><circle cx="50" cy="50" r="45" stroke="transparent" stroke-width="10" fill="none" stroke-linecap="round"/></svg>');
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: loading 1s linear infinite;
+  margin-left: 0.5em;
+}
+@keyframes loading {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @media (prefers-color-scheme: dark) {

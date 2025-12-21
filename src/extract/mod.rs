@@ -1,4 +1,5 @@
 use serde::de::DeserializeOwned;
+use std::future::Future;
 use tauri::Runtime;
 
 use crate::CommandContext;
@@ -39,7 +40,7 @@ pub trait FromRequestParts<R: Runtime>: Sized {
         parts: &mut tauri::http::request::Parts,
         body: &[u8],
         ctx: &mut CommandContext<R>,
-    ) -> crate::Result<Self>;
+    ) -> impl Future<Output = crate::Result<Self>> + Send;
 }
 
 /// Trait for types that can be extracted from the complete request (including body).
@@ -51,25 +52,25 @@ pub trait FromRequest<R: Runtime, M = private::ViaRequest>: Sized {
     fn from_request(
         req: tauri::http::Request<Vec<u8>>,
         ctx: &mut CommandContext<R>,
-    ) -> crate::Result<Self>;
+    ) -> impl Future<Output = crate::Result<Self>> + Send;
 }
 
 /// Blanket implementation to allow any `FromRequestParts` extractor to be used
 /// as a `FromRequest` extractor.
 impl<T: FromRequestParts<R>, R: Runtime> FromRequest<R, private::ViaParts> for T {
-    fn from_request(
+    async fn from_request(
         req: tauri::http::Request<Vec<u8>>,
         ctx: &mut CommandContext<R>,
     ) -> crate::Result<Self> {
         let (mut parts, body) = req.into_parts();
-        T::from_request_parts(&mut parts, &body, ctx)
+        T::from_request_parts(&mut parts, &body, ctx).await
     }
 }
 
 /// Blanket implementation to allow deserializing JSON body into any type
 /// that implements `DeserializeOwned`.
-impl<R: Runtime, T: DeserializeOwned> FromRequestParts<R> for T {
-    fn from_request_parts(
+impl<R: Runtime, T: DeserializeOwned + Send + 'static> FromRequestParts<R> for T {
+    async fn from_request_parts(
         _parts: &mut tauri::http::request::Parts,
         body: &[u8],
         ctx: &mut CommandContext<R>,

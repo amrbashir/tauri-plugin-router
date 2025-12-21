@@ -12,6 +12,7 @@ exclude = ["/examples", "/dist-js", "/guest-js", "/node_modules"]
 links = "tauri-plugin-router"
 
 [features]
+default = ["unstable"]
 unstable = ["tauri/unstable"]
 
 [dependencies]
@@ -19,6 +20,9 @@ tauri = { version = "2.9.3", features = ["test"] }
 serde = "1.0"
 serde_json = "1.0"
 thiserror = "2"
+
+[dev-dependencies]
+tokio = { version = "1", features = ["macros", "time"] }
 
 [build-dependencies]
 tauri-plugin = { version = "2.5.1", features = ["build"] }

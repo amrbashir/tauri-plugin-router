@@ -1,4 +1,4 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -10,7 +10,7 @@
 
   <body>
     <main class="container">
-      <h1>Welcome to Tauri</h1>
+      <h1>Tauri Plugin Router</h1>
 
       <div class="row">
         <a href="https://vite.dev" target="_blank">
@@ -31,13 +31,18 @@
           />
         </a>
       </div>
-      <p>Click on the Tauri logo to learn more about the framework</p>
 
       <form class="row" id="greet-form">
         <input id="greet-input" placeholder="Enter a name..." />
         <button type="submit">Greet</button>
       </form>
       <p id="greet-msg"></p>
+
+      <form class="row" id="async-greet-form">
+        <input id="async-greet-input" placeholder="Enter a name..." />
+        <button id="async-greet-btn" type="submit">Greet (Async)</button>
+      </form>
+      <p id="async-greet-msg"></p>
     </main>
   </body>
 </html>

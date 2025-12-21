@@ -7,7 +7,7 @@ use crate::{CommandContext, FromRequestParts};
 pub struct AppHandle<R: Runtime>(pub tauri::AppHandle<R>);
 
 impl<R: Runtime> FromRequestParts<R> for AppHandle<R> {
-    fn from_request_parts(
+    async fn from_request_parts(
         _parts: &mut tauri::http::request::Parts,
         _body: &[u8],
         ctx: &mut CommandContext<R>,

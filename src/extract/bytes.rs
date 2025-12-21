@@ -6,7 +6,7 @@ use crate::{FromRequest, IntoResponse};
 pub struct Bytes(pub Vec<u8>);
 
 impl<R: Runtime> FromRequest<R> for Bytes {
-    fn from_request(
+    async fn from_request(
         req: tauri::http::Request<Vec<u8>>,
         _ctx: &mut crate::CommandContext<R>,
     ) -> crate::Result<Self> {

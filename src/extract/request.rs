@@ -6,7 +6,7 @@ use crate::{CommandContext, FromRequest};
 pub struct Request(pub tauri::http::Request<Vec<u8>>);
 
 impl<R: Runtime> FromRequest<R> for Request {
-    fn from_request(
+    async fn from_request(
         req: tauri::http::Request<Vec<u8>>,
         _ctx: &mut CommandContext<R>,
     ) -> crate::Result<Self> {
