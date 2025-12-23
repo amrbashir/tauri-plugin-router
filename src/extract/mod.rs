@@ -6,6 +6,7 @@ use crate::CommandContext;
 
 mod app_handle;
 mod bytes;
+mod header_map;
 mod request;
 #[cfg(feature = "unstable")]
 mod webview;
@@ -15,6 +16,7 @@ mod window;
 
 pub use app_handle::*;
 pub use bytes::*;
+pub use header_map::*;
 pub use request::*;
 #[cfg(feature = "unstable")]
 pub use webview::*;
