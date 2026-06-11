@@ -10,56 +10,56 @@ use crate::IntoResponse;
 use super::CommandContext;
 
 mod private {
-    #[derive(Debug, Clone, Copy)]
-    pub enum ViaSync {}
-    #[derive(Debug, Clone, Copy)]
-    pub enum ViaAsync {}
+	#[derive(Debug, Clone, Copy)]
+	pub enum ViaSync {}
+	#[derive(Debug, Clone, Copy)]
+	pub enum ViaAsync {}
 }
 
 /// Trait to convert a function into a command handler.
 pub trait CommandHandler<R: Runtime, T>: Clone + Send + Sync + Sized + 'static {
-    type Future: Future<Output = tauri::http::Response<Vec<u8>>> + Send + 'static;
+	type Future: Future<Output = tauri::http::Response<Vec<u8>>> + Send + 'static;
 
-    fn call(self, req: tauri::http::Request<Vec<u8>>, ctx: CommandContext<R>) -> Self::Future;
+	fn call(self, req: tauri::http::Request<Vec<u8>>, ctx: CommandContext<R>) -> Self::Future;
 }
 
 /// Type-erased command handler function
 pub(crate) type ErasedCommandHandler<R> = Arc<
-    dyn Fn(
-            CommandContext<R>,
-            tauri::http::Request<Vec<u8>>,
-        ) -> Pin<Box<dyn Future<Output = tauri::http::Response<Vec<u8>>> + Send>>
-        + Send
-        + Sync,
+	dyn Fn(
+			CommandContext<R>,
+			tauri::http::Request<Vec<u8>>,
+		) -> Pin<Box<dyn Future<Output = tauri::http::Response<Vec<u8>>> + Send>>
+		+ Send
+		+ Sync,
 >;
 
 // Handler with no arguments - sync version
 impl<F, R, Ret> CommandHandler<R, (private::ViaSync,)> for F
 where
-    F: FnOnce() -> Ret + Clone + Send + Sync + 'static,
-    Ret: IntoResponse + Send + 'static,
-    R: tauri::Runtime,
+	F: FnOnce() -> Ret + Clone + Send + Sync + 'static,
+	Ret: IntoResponse + Send + 'static,
+	R: tauri::Runtime,
 {
-    type Future = std::future::Ready<tauri::http::Response<Vec<u8>>>;
+	type Future = std::future::Ready<tauri::http::Response<Vec<u8>>>;
 
-    fn call(self, _req: tauri::http::Request<Vec<u8>>, _ctx: CommandContext<R>) -> Self::Future {
-        std::future::ready(self().into_response())
-    }
+	fn call(self, _req: tauri::http::Request<Vec<u8>>, _ctx: CommandContext<R>) -> Self::Future {
+		std::future::ready(self().into_response())
+	}
 }
 
 // Handler with no arguments - async version
 impl<F, R, Fut, Ret> CommandHandler<R, (private::ViaAsync,)> for F
 where
-    F: FnOnce() -> Fut + Clone + Send + Sync + 'static,
-    Fut: Future<Output = Ret> + Send + 'static,
-    Ret: IntoResponse + Send + 'static,
-    R: tauri::Runtime,
+	F: FnOnce() -> Fut + Clone + Send + Sync + 'static,
+	Fut: Future<Output = Ret> + Send + 'static,
+	Ret: IntoResponse + Send + 'static,
+	R: tauri::Runtime,
 {
-    type Future = Pin<Box<dyn Future<Output = tauri::http::Response<Vec<u8>>> + Send>>;
+	type Future = Pin<Box<dyn Future<Output = tauri::http::Response<Vec<u8>>> + Send>>;
 
-    fn call(self, _req: tauri::http::Request<Vec<u8>>, _ctx: CommandContext<R>) -> Self::Future {
-        Box::pin(async move { self().await.into_response() })
-    }
+	fn call(self, _req: tauri::http::Request<Vec<u8>>, _ctx: CommandContext<R>) -> Self::Future {
+		Box::pin(async move { self().await.into_response() })
+	}
 }
 
 macro_rules! impl_command_handler {

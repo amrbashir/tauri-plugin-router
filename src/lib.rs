@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
 use tauri::{
-    plugin::{Builder, TauriPlugin},
-    Runtime,
+	plugin::{Builder, TauriPlugin},
+	Runtime,
 };
 
 mod context;
@@ -51,46 +51,46 @@ pub use router::*;
 /// }
 /// ```
 pub fn init<R: Runtime>(router: Router<R>) -> TauriPlugin<R> {
-    let router = Arc::new(router);
+	let router = Arc::new(router);
 
-    Builder::new("router")
-        .register_asynchronous_uri_scheme_protocol("router", move |context, request, responder| {
-            use tauri::http::header::*;
-            use tauri::http::*;
+	Builder::new("router")
+		.register_asynchronous_uri_scheme_protocol("router", move |context, request, responder| {
+			use tauri::http::header::*;
+			use tauri::http::*;
 
-            let app_handle = context.app_handle().clone();
-            let webview_label = context.webview_label().to_string();
-            let router = Arc::clone(&router);
+			let app_handle = context.app_handle().clone();
+			let webview_label = context.webview_label().to_string();
+			let router = Arc::clone(&router);
 
-            tauri::async_runtime::spawn(async move {
-                let response = match *request.method() {
-                    Method::OPTIONS => Response::builder()
-                        .header(ACCESS_CONTROL_ALLOW_ORIGIN, HeaderValue::from_static("*"))
-                        .header(ACCESS_CONTROL_ALLOW_HEADERS, HeaderValue::from_static("*"))
-                        .body(Vec::new())
-                        .unwrap(),
+			tauri::async_runtime::spawn(async move {
+				let response = match *request.method() {
+					Method::OPTIONS => Response::builder()
+						.header(ACCESS_CONTROL_ALLOW_ORIGIN, HeaderValue::from_static("*"))
+						.header(ACCESS_CONTROL_ALLOW_HEADERS, HeaderValue::from_static("*"))
+						.body(Vec::new())
+						.unwrap(),
 
-                    Method::POST => {
-                        let mut response = router
-                            .handle_request(&app_handle, &webview_label, request)
-                            .await;
-                        let headers_mut = response.headers_mut();
-                        headers_mut
-                            .insert(ACCESS_CONTROL_ALLOW_ORIGIN, HeaderValue::from_static("*"));
-                        headers_mut
-                            .insert(ACCESS_CONTROL_ALLOW_HEADERS, HeaderValue::from_static("*"));
-                        response
-                    }
+					Method::POST => {
+						let mut response = router
+							.handle_request(&app_handle, &webview_label, request)
+							.await;
+						let headers_mut = response.headers_mut();
+						headers_mut
+							.insert(ACCESS_CONTROL_ALLOW_ORIGIN, HeaderValue::from_static("*"));
+						headers_mut
+							.insert(ACCESS_CONTROL_ALLOW_HEADERS, HeaderValue::from_static("*"));
+						response
+					}
 
-                    _ => Response::builder()
-                        .status(StatusCode::METHOD_NOT_ALLOWED)
-                        .header(CONTENT_TYPE, "application/json")
-                        .body("only POST and OPTIONS are allowed".as_bytes().to_vec())
-                        .unwrap(),
-                };
+					_ => Response::builder()
+						.status(StatusCode::METHOD_NOT_ALLOWED)
+						.header(CONTENT_TYPE, "application/json")
+						.body("only POST and OPTIONS are allowed".as_bytes().to_vec())
+						.unwrap(),
+				};
 
-                responder.respond(response);
-            });
-        })
-        .build()
+				responder.respond(response);
+			});
+		})
+		.build()
 }
